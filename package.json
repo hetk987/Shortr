@@ -1,0 +1,17 @@
+{
+  "name": "shortr-app",
+  "version": "1.0.0",
+  "bin": "index.js",
+  "pkg": {
+    "assets": []
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "express": "^5.1.0",
+    "path": "^0.12.7",
+    "pkg": "^5.8.1"
+  }
+}

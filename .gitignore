@@ -1,0 +1,10 @@
+# Ignore compiled binaries and personal DB
+shortr
+shortr-app
+*.db
+
+# Node modules
+node_modules/
+
+# macOS metadata files
+.DS_Store
