@@ -6,12 +6,16 @@
     "assets": []
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
+    "@prisma/client": "^6.9.0",
     "better-sqlite3": "^11.10.0",
     "express": "^5.1.0",
     "path": "^0.12.7",
     "pkg": "^5.8.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.9.0"
   }
 }
