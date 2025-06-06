@@ -1,27 +1,26 @@
 #!/usr/bin/env node
 
 const express = require("express");
+const prisma = require("../lib/prismaClient");
+
 const app = express();
 const port = 80;
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
 
-function logger(req, res, next) {
-  // console.log(req.method, req.url);
-  next();
-}
+// Express middleware
+app.use(express.json({ limit: "1kb" }));
+app.use(express.urlencoded({ extended: true, limit: "1kb" }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(logger);
+// Enable WAL mode for better SQLite concurrency
+prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL");
 
 // Get all shortlinks
 app.get("/", async (req, res) => {
   try {
-    const links = await prisma.shortLink.findMany();
+    const links = await prisma.shortLink.findMany({
+      select: { alias: true, url: true, count: true },
+    });
     res.status(200).json(links);
-  } catch (error) {
-    // // console.error("Error fetching links:", error);
+  } catch {
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -41,7 +40,6 @@ app.post("/", async (req, res) => {
     if (err.code === "P2002") {
       return res.status(409).json({ error: `Alias '${alias}' already exists` });
     }
-    // console.error("Error creating shortlink:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -52,6 +50,7 @@ app.get("/:alias", async (req, res) => {
   try {
     const link = await prisma.shortLink.findUnique({
       where: { alias },
+      select: { url: true },
     });
 
     if (!link) return res.status(404).send("Alias not found");
@@ -60,17 +59,14 @@ app.get("/:alias", async (req, res) => {
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       url = "http://" + url;
     }
+
     await prisma.shortLink.update({
-      where: {
-        alias,
-      },
-      data: {
-        count: { increment: 1 },
-      },
+      where: { alias },
+      data: { count: { increment: 1 } },
     });
+
     res.redirect(302, url);
-  } catch (error) {
-    // console.error("Error during redirection:", error);
+  } catch {
     res.status(500).send("Internal server error");
   }
 });
@@ -87,11 +83,30 @@ app.delete("/:alias", async (req, res) => {
     if (err.code === "P2025") {
       return res.status(404).json({ error: "Alias not found" });
     }
-    // console.error("Error deleting alias:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-app.listen(port, () => {
-  // console.log(`Shortr running on port ${port}`);
+// Update Alias
+app.put("/", async (req, res) => {
+  try {
+    const { alias, url } = req.body;
+    const updatedLink = await prisma.shortLink.update({
+      where: { alias },
+      data: {
+        alias,
+        url,
+        count: 0,
+      },
+    });
+    res.status(201).json(updatedLink);
+  } catch (error) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Alias not found" });
+    }
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
+
+// Start the server
+app.listen(port);
