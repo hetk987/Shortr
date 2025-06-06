@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
 const express = require("express");
-const prisma = require("../prismaClient");
 const app = express();
 const port = 80;
-
-console.log("🧩 Using Prisma client");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 function logger(req, res, next) {
-  console.log(req.method, req.url);
+  // console.log(req.method, req.url);
   next();
 }
 
@@ -22,7 +21,7 @@ app.get("/", async (req, res) => {
     const links = await prisma.shortLink.findMany();
     res.status(200).json(links);
   } catch (error) {
-    console.error("Error fetching links:", error);
+    // // console.error("Error fetching links:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -42,7 +41,7 @@ app.post("/", async (req, res) => {
     if (err.code === "P2002") {
       return res.status(409).json({ error: `Alias '${alias}' already exists` });
     }
-    console.error("Error creating shortlink:", err);
+    // console.error("Error creating shortlink:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -71,7 +70,7 @@ app.get("/:alias", async (req, res) => {
     });
     res.redirect(302, url);
   } catch (error) {
-    console.error("Error during redirection:", error);
+    // console.error("Error during redirection:", error);
     res.status(500).send("Internal server error");
   }
 });
@@ -88,11 +87,11 @@ app.delete("/:alias", async (req, res) => {
     if (err.code === "P2025") {
       return res.status(404).json({ error: "Alias not found" });
     }
-    console.error("Error deleting alias:", err);
+    // console.error("Error deleting alias:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
 app.listen(port, () => {
-  console.log(`Shortr running on port ${port}`);
+  // console.log(`Shortr running on port ${port}`);
 });

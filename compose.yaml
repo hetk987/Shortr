@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  server:
+    build:
+      context: .
+    container_name: shortr-server
+    environment:
+      NODE_ENV: production
+    ports:
+      - "80:80"
+    volumes:
+      - ./prisma:/app/prisma
+      - .:/app
+    working_dir: /app
+    command: ["node", "src/index.js"]
