@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node src/index.js",
-    "postinstall": "prisma generate"
+    "push": "docker-compose down && docker-compose up --build"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",

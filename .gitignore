@@ -8,3 +8,10 @@ node_modules/
 
 # macOS metadata files
 .DS_Store
+
+Dockerfile
+docker-compose.yml
+*.log
+.env
+.git
+*.sqlite
