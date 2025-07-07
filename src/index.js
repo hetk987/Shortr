@@ -6,6 +6,22 @@ const prisma = require("../lib/prismaClient");
 const app = express();
 const port = 80;
 
+// CORS middleware
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // Express middleware
 app.use(express.json({ limit: "1kb" }));
 app.use(express.urlencoded({ extended: true, limit: "1kb" }));
@@ -17,7 +33,7 @@ prisma.$executeRawUnsafe("PRAGMA journal_mode=WAL");
 app.get("/", async (req, res) => {
   try {
     const links = await prisma.shortLink.findMany({
-      select: { alias: true, url: true, count: true },
+      select: { alias: true, url: true, count: true, createdAt: true },
     });
     res.status(200).json(links);
   } catch {
@@ -100,7 +116,7 @@ app.put("/", async (req, res) => {
       },
     });
     res.status(201).json(updatedLink);
-  } catch (error) {
+  } catch (err) {
     if (err.code === "P2025") {
       return res.status(404).json({ error: "Alias not found" });
     }
