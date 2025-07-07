@@ -1,225 +1,194 @@
 # Shortr - URL Shortener
 
-A modern, elegant URL shortener with a beautiful frontend and robust backend API.
+A modern URL shortener application built with Node.js backend and Next.js frontend, containerized with Docker.
 
-## 🚀 Features
+## 🚀 Quick Start
 
-- **🔗 URL Shortening**: Create custom short links with your own aliases
-- **📊 Analytics**: Track click counts for each short link
-- **🎨 Modern UI**: Beautiful, responsive frontend built with Next.js and shadcn/ui
-- **⚡ Fast API**: Lightweight Express.js backend with SQLite database
-- **📱 Mobile Friendly**: Works perfectly on all devices
-- **🌙 Dark Mode**: Automatic dark mode support
-- **🔒 Secure**: Input validation and error handling
+### Option 1: Start Combined Single Container (Recommended)
+
+```bash
+make start-combined
+```
+
+### Option 2: Start Both Services Separately
+
+```bash
+make start-all
+```
+
+### Option 3: Start Services Individually
+
+```bash
+# Start backend only
+make start-backend
+
+# Start frontend only (requires backend to be running)
+make start-frontend
+```
+
+## 📋 Available Commands
+
+Run `make help` to see all available commands:
+
+- `make start-combined` - Start combined single container
+- `make start-all` - Start both services together
+- `make start-backend` - Start backend service only
+- `make start-frontend` - Start frontend service only
+- `make stop-all` - Stop all services
+- `make build-backend` - Build backend Docker image
+- `make build-frontend` - Build frontend Docker image
+- `make logs-all` - View logs from all services
+- `make logs-backend` - View backend logs only
+- `make logs-frontend` - View frontend logs only
+- `make clean` - Remove all containers and images
+
+## 🌐 Access Points
+
+Once running, you can access:
+
+### Combined Container (Recommended)
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080
+- **API Health Check**: http://localhost:8080/
+
+### Separate Services
+
+- **Frontend**: http://localhost:3001
+- **Backend API**: http://localhost:8081
+- **API Health Check**: http://localhost:8081/
 
 ## 🏗️ Architecture
 
-- **Backend**: Node.js + Express.js + Prisma + SQLite
-- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS + shadcn/ui
-- **Database**: SQLite with WAL mode for better concurrency
+### Services
+
+1. **Backend** (`./backend/`)
+
+   - Express.js API server
+   - SQLite database with Prisma ORM
+   - Runs on port 80 (mapped to 8081 externally)
+   - Handles URL shortening, redirects, and statistics
+
+2. **Frontend** (`./frontend/`)
+   - Next.js React application
+   - Modern UI with shadcn/ui components
+   - Runs on port 3000 (mapped to 3001 externally)
+   - Communicates with backend API
+
+### Docker Setup
+
+- **Combined Container**: Single container running both services with `supervisord`
+- **Individual Services**: Each service has its own `docker-compose.yml` for independent operation
+- **Combined Setup**: Root `docker-compose.yml` orchestrates both services
+- **Network**: Services communicate via Docker network `shortr-network`
+- **Health Checks**: Both services include health checks for reliability
+
+## 🔧 Development
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Make (optional, for convenience commands)
+
+### Manual Docker Commands
+
+If you prefer not to use Make:
+
+```bash
+# Start combined single container
+docker-compose -f docker-compose.combined.yml up -d --build
+
+# Start both services separately
+docker-compose up -d --build
+
+# Start backend only
+cd backend && docker-compose up -d
+
+# Start frontend only
+cd frontend && docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all
+docker-compose down
+```
+
+### Environment Variables
+
+The services use these environment variables:
+
+**Backend:**
+
+- `NODE_ENV=production`
+- `DATABASE_URL=file:/app/prisma/dev.db`
+- `PORT=80`
+
+**Frontend:**
+
+- `NODE_ENV=production`
+- `NEXT_PUBLIC_API_URL=http://backend:80` (when using combined setup)
+- `NEXT_PUBLIC_API_URL=http://localhost:8081` (when running standalone)
 
 ## 📁 Project Structure
 
 ```
 Shortr/
-├── src/                    # Backend API source code
-├── prisma/                 # Database schema and migrations
-├── lib/                    # Backend utilities
-├── frontend/               # Next.js frontend application
+├── backend/                 # Backend API service
 │   ├── src/
-│   │   ├── app/           # Next.js app router pages
-│   │   └── components/    # React components
-│   └── package.json
-├── package.json           # Backend dependencies
-└── compose.yaml          # Docker Compose configuration
+│   ├── prisma/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── frontend/               # Frontend web application
+│   ├── src/
+│   ├── Dockerfile
+│   └── docker-compose.yml
+├── Dockerfile              # Combined container
+├── supervisord.conf        # Process manager config
+├── docker-compose.yml      # Multi-service orchestration
+├── docker-compose.combined.yml # Single container setup
+├── Makefile               # Convenience commands
+└── README.md
 ```
 
-## 🛠️ Quick Start
+## 🛠️ API Endpoints
 
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- Docker (optional, for containerized deployment)
-
-### Backend Setup
-
-1. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-2. Set up the database:
-
-   ```bash
-   npx prisma migrate dev
-   ```
-
-3. Start the backend server:
-   ```bash
-   npm start
-   ```
-
-The API will be available at `http://localhost:80`
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-
-   ```bash
-   cd frontend
-   ```
-
-2. Run the setup script:
-
-   ```bash
-   ./setup.sh
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-The frontend will be available at `http://localhost:3000`
-
-## 🐳 Docker Deployment
-
-Use Docker Compose to run both services:
-
-```bash
-docker-compose up --build
-```
-
-This will start:
-
-- Backend API on port 80
-- Frontend on port 3000
-
-## 📚 API Endpoints
-
-### Backend API (`http://localhost:80`)
-
-- `GET /` - Get all short links
-- `POST /` - Create a new short link
+- `GET /` - List all short links
+- `POST /` - Create new short link
 - `GET /:alias` - Redirect to target URL
-- `DELETE /:alias` - Delete a short link
-- `PUT /` - Update a short link
+- `DELETE /:alias` - Delete short link
+- `PUT /` - Update short link
 
-### Request/Response Examples
+## 🔍 Troubleshooting
 
-**Create a short link:**
+### Service Communication Issues
 
-```bash
-curl -X POST http://localhost:80/ \
-  -H "Content-Type: application/json" \
-  -d '{"alias": "my-link", "url": "https://example.com"}'
-```
+If the frontend can't connect to the backend:
 
-**Get all links:**
+1. Ensure both services are running: `docker-compose ps`
+2. Check backend health: `curl http://localhost:8081/`
+3. Verify network connectivity: `docker network ls`
 
-```bash
-curl http://localhost:80/
-```
+### Database Issues
 
-## 🎨 Frontend Features
+If the database isn't working:
 
-- **Create Links**: Simple form to create new short links
-- **Manage Links**: View, copy, and delete existing links
-- **Analytics**: See click counts for each link
-- **Responsive Design**: Works on desktop and mobile
-- **Real-time Updates**: Automatic refresh after actions
-- **Toast Notifications**: User-friendly feedback
+1. Check if Prisma migrations ran: `docker-compose logs backend`
+2. Restart the backend service: `make stop-all && make start-all`
 
-## 🔧 Configuration
+### Port Conflicts
 
-### Backend Environment Variables
+If ports are already in use:
 
-The backend uses default SQLite database. For production, consider using PostgreSQL.
+- Backend: Change port 8081 in `docker-compose.yml`
+- Frontend: Change port 3001 in `docker-compose.yml`
 
-### Frontend Environment Variables
+## 🧹 Cleanup
 
-Create `.env.local` in the frontend directory:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:80
-```
-
-## 🧪 Development
-
-### Backend Development
+To completely remove all Docker resources:
 
 ```bash
-# Start development server
-npm start
-
-# Run database migrations
-npx prisma migrate dev
-
-# Open Prisma Studio
-npx prisma studio
+make clean
 ```
 
-### Frontend Development
-
-```bash
-cd frontend
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Run linting
-npm run lint
-```
-
-## 📦 Production Deployment
-
-### Backend
-
-1. Build the Docker image:
-
-   ```bash
-   docker build -t shortr-backend .
-   ```
-
-2. Run with environment variables:
-   ```bash
-   docker run -p 80:80 shortr-backend
-   ```
-
-### Frontend
-
-1. Build the application:
-
-   ```bash
-   cd frontend
-   npm run build
-   ```
-
-2. Start the production server:
-   ```bash
-   npm start
-   ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) for the amazing React framework
-- [shadcn/ui](https://ui.shadcn.com/) for the beautiful components
-- [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
-- [Prisma](https://www.prisma.io/) for the database toolkit
+This will remove all containers, images, and volumes associated with the project.

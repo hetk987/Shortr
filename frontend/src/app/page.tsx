@@ -1,21 +1,45 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+/**
+ * Shortr Frontend - Main Application Page
+ *
+ * This is the main React component for the URL shortener frontend.
+ * Features include:
+ * - Create new short links with custom aliases
+ * - Display and manage existing short links
+ * - Copy links to clipboard
+ * - Delete links with confirmation
+ * - Real-time updates and error handling
+ * - Responsive design for mobile and desktop
+ *
+ * Technologies used:
+ * - React with TypeScript
+ * - shadcn/ui components
+ * - Tailwind CSS for styling
+ * - Lucide React for icons
+ * - Sonner for toast notifications
+ */
+
+import { useState, useEffect, useCallback } from "react";
+import { Button } from "../components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Toaster } from "@/components/ui/sonner";
+} from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Badge } from "../components/ui/badge";
+import { Toaster } from "../components/ui/sonner";
 import { toast } from "sonner";
 import { Trash2, ExternalLink, Copy, Plus, BarChart3 } from "lucide-react";
 
+/**
+ * TypeScript interface for short link data structure
+ * Matches the backend API response format
+ */
 interface ShortLink {
   alias: string;
   url: string;
@@ -24,34 +48,51 @@ interface ShortLink {
 }
 
 export default function Home() {
+  // State management for form inputs
   const [alias, setAlias] = useState("");
   const [url, setUrl] = useState("");
+
+  // State management for links data and loading states
   const [links, setLinks] = useState<ShortLink[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingLinks, setIsLoadingLinks] = useState(true);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:80";
+  // API configuration - use environment variable or default to Docker service name
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://backend:80";
 
-  useEffect(() => {
-    fetchLinks();
-  }, []);
-
-  const fetchLinks = async () => {
+  /**
+   * Fetch all short links from the backend API
+   * Updates the links state and handles loading states
+   */
+  const fetchLinks = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE}/`);
       if (response.ok) {
         const data = await response.json();
         setLinks(data);
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to fetch links");
     } finally {
       setIsLoadingLinks(false);
     }
-  };
+  }, [API_BASE]);
 
+  /**
+   * Fetch all short links from the API on component mount
+   */
+  useEffect(() => {
+    fetchLinks();
+  }, [fetchLinks]);
+
+  /**
+   * Create a new short link
+   * Validates input, sends POST request to API, and updates the UI
+   */
   const createLink = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
     if (!alias || !url) {
       toast.error("Please fill in both alias and URL");
       return;
@@ -69,6 +110,7 @@ export default function Home() {
 
       if (response.ok) {
         toast.success("Short link created successfully!");
+        // Clear form and refresh links list
         setAlias("");
         setUrl("");
         fetchLinks();
@@ -76,13 +118,17 @@ export default function Home() {
         const error = await response.json();
         toast.error(error.error || "Failed to create link");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to create link");
     } finally {
       setIsLoading(false);
     }
   };
 
+  /**
+   * Delete a short link by alias
+   * Sends DELETE request to API and refreshes the links list
+   */
   const deleteLink = async (alias: string) => {
     try {
       const response = await fetch(`${API_BASE}/${alias}`, {
@@ -95,26 +141,39 @@ export default function Home() {
       } else {
         toast.error("Failed to delete link");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete link");
     }
   };
 
+  /**
+   * Copy a short link to the clipboard
+   * Uses the current hostname and port for the copy URL
+   */
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(`${API_BASE}/${text}`);
+    // Use the current hostname for the copy URL (works in Docker and local development)
+    const currentHost = window.location.hostname;
+    const currentPort = window.location.port ? `:${window.location.port}` : "";
+    const protocol = window.location.protocol;
+    const copyUrl = `${protocol}//${currentHost}${currentPort}/${text}`;
+    navigator.clipboard.writeText(copyUrl);
     toast.success("Copied to clipboard!");
   };
 
+  /**
+   * Format date string to readable format
+   */
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      {/* Toast notifications container */}
       <Toaster />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Application Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-4">
             Shortr
@@ -124,7 +183,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Create Link Form */}
+        {/* Create New Link Form Card */}
         <Card className="max-w-2xl mx-auto mb-8 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -137,6 +196,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <form onSubmit={createLink} className="space-y-4">
+              {/* Form inputs in responsive grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="alias">Custom Alias</Label>
@@ -165,7 +225,7 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Links List */}
+        {/* Links Management Card */}
         <Card className="max-w-4xl mx-auto shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -177,23 +237,27 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Loading state */}
             {isLoadingLinks ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900 mx-auto"></div>
                 <p className="mt-2 text-slate-600">Loading links...</p>
               </div>
             ) : links.length === 0 ? (
+              /* Empty state */
               <div className="text-center py-8 text-slate-600">
                 <p>No short links created yet.</p>
                 <p className="text-sm">Create your first one above!</p>
               </div>
             ) : (
+              /* Links list */
               <div className="space-y-4">
                 {links.map((link) => (
                   <div
                     key={link.alias}
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                   >
+                    {/* Link information */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-mono text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -210,15 +274,21 @@ export default function Home() {
                         Created {formatDate(link.createdAt)}
                       </p>
                     </div>
+
+                    {/* Action buttons */}
                     <div className="flex items-center gap-2 ml-4">
+                      {/* Copy button */}
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => copyToClipboard(link.alias)}
                         className="h-8 w-8 p-0"
+                        title="Copy link"
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
+
+                      {/* Open link button */}
                       <Button
                         variant="outline"
                         size="sm"
@@ -226,14 +296,18 @@ export default function Home() {
                           window.open(`${API_BASE}/${link.alias}`, "_blank")
                         }
                         className="h-8 w-8 p-0"
+                        title="Open link"
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
+
+                      {/* Delete button */}
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => deleteLink(link.alias)}
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete link"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  shortr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shortr-combined
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/app/backend/prisma/dev.db
+      PORT: 80
+      NEXT_PUBLIC_API_URL: http://localhost:80
+    ports:
+      - "8080:80" # Backend API
+      - "3000:3000" # Frontend
+    volumes:
+      - ./backend/prisma:/app/backend/prisma
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:80/",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
