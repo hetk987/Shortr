@@ -1,10 +1,12 @@
 services:
-  server:
+  # Backend API Server
+  backend:
     build:
       context: .
-    container_name: shortr-server
+    container_name: shortr-backend
     environment:
       NODE_ENV: production
+      DATABASE_URL: file:/app/prisma/dev.db
     ports:
       - "80:80"
     volumes:
@@ -12,3 +14,16 @@ services:
       - .:/app
     working_dir: /app
     command: ["node", "src/index.js"]
+
+  # Frontend Web Interface
+  frontend:
+    build:
+      context: ./shortr-frontend
+    container_name: shortr-frontend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:80
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
