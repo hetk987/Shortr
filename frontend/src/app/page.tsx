@@ -57,8 +57,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingLinks, setIsLoadingLinks] = useState(true);
 
-  // API configuration - use environment variable or default to Docker service name
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://backend:80";
+  // API configuration - use /api as the base path for proxying
+  const API_BASE = "/api";
 
   /**
    * Fetch all short links from the backend API
@@ -148,14 +148,13 @@ export default function Home() {
 
   /**
    * Copy a short link to the clipboard
-   * Uses the current hostname and port for the copy URL
+   * Uses the redirector URL (port 80) for the copy URL
    */
   const copyToClipboard = (text: string) => {
-    // Use the current hostname for the copy URL (works in Docker and local development)
+    // Use the redirector URL (port 80) for short links
     const currentHost = window.location.hostname;
-    const currentPort = window.location.port ? `:${window.location.port}` : "";
     const protocol = window.location.protocol;
-    const copyUrl = `${protocol}//${currentHost}${currentPort}/${text}`;
+    const copyUrl = `${protocol}//${currentHost}/${text}`;
     navigator.clipboard.writeText(copyUrl);
     toast.success("Copied to clipboard!");
   };
@@ -292,9 +291,11 @@ export default function Home() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() =>
-                          window.open(`${API_BASE}/${link.alias}`, "_blank")
-                        }
+                        onClick={() => {
+                          const currentHost = window.location.hostname;
+                          const protocol = window.location.protocol;
+                          window.open(`${protocol}//${currentHost}/${link.alias}`, "_blank");
+                        }}
                         className="h-8 w-8 p-0"
                         title="Open link"
                       >

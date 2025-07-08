@@ -1,21 +1,19 @@
 version: "3.8"
 
 services:
-  shortr:
+  # Backend API Server
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: shortr-combined
+    container_name: shortr-backend
     environment:
       NODE_ENV: production
-      DATABASE_URL: file:/app/backend/prisma/dev.db
-      PORT: 80
-      NEXT_PUBLIC_API_URL: http://localhost:80
-    ports:
-      - "8080:80" # Backend API
-      - "3000:3000" # Frontend
+      DATABASE_URL: file:/app/prisma/dev.db
+      PORT: 8080
     volumes:
-      - ./backend/prisma:/app/backend/prisma
+      - ./backend/prisma:/app/prisma
+    working_dir: /app
     restart: unless-stopped
     healthcheck:
       test:
@@ -25,8 +23,72 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:80/",
+          "http://localhost:8080/",
         ]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - shortr-network
+
+  # Frontend Web Interface
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shortr-frontend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - shortr-network
+
+  # Frontend Nginx (serves UI and proxies /api)
+  nginx-frontend:
+    image: nginx:alpine
+    container_name: shortr-nginx-frontend
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./nginx.frontend.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - shortr-network
+
+  # Redirector Nginx (handles short URL redirects)
+  nginx-redirect:
+    image: nginx:alpine
+    container_name: shortr-nginx-redirect
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.redirect.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - shortr-network
+
+networks:
+  shortr-network:
+    driver: bridge

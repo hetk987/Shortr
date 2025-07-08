@@ -12,14 +12,14 @@
  * - CORS support for frontend integration
  *
  * Database: SQLite with Prisma ORM
- * Port: 80 (configurable via environment)
+ * Port: 8080 (configurable via environment)
  */
 
 const express = require("express");
 const prisma = require("../lib/prismaClient");
 
 const app = express();
-const port = process.env.PORT || 80; // Allow port configuration via environment
+const port = process.env.PORT || 8080; // Allow port configuration via environment
 
 // CORS middleware - Enable cross-origin requests for frontend integration
 app.use((req, res, next) => {
