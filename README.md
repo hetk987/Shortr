@@ -1,134 +1,59 @@
 # Shortr - URL Shortener
 
-A modern URL shortener application built with Node.js backend and Next.js frontend, containerized with Docker.
+A modern URL shortener application built with Node.js backend and Next.js frontend, containerized with Docker and served via a single Nginx instance.
 
 ## 🚀 Quick Start
 
-### Option 1: Start Combined Single Container (Recommended)
+Start the application using the single-nginx setup:
 
 ```bash
-make start-combined
+./start-shortr-single.sh
 ```
 
-### Option 2: Start Both Services Separately
-
-```bash
-make start-all
-```
-
-### Option 3: Start Services Individually
-
-```bash
-# Start backend only
-make start-backend
-
-# Start frontend only (requires backend to be running)
-make start-frontend
-```
-
-## 📋 Available Commands
-
-Run `make help` to see all available commands:
-
-- `make start-combined` - Start combined single container
-- `make start-all` - Start both services together
-- `make start-backend` - Start backend service only
-- `make start-frontend` - Start frontend service only
-- `make stop-all` - Stop all services
-- `make build-backend` - Build backend Docker image
-- `make build-frontend` - Build frontend Docker image
-- `make logs-all` - View logs from all services
-- `make logs-backend` - View backend logs only
-- `make logs-frontend` - View frontend logs only
-- `make clean` - Remove all containers and images
+This will build and start all services (backend, frontend, and nginx) in separate containers, with a single Nginx instance proxying both the frontend UI and redirector endpoints.
 
 ## 🌐 Access Points
 
-Once running, you can access:
-
-### Combined Container (Recommended)
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8080
-- **API Health Check**: http://localhost:8080/
-
-### Separate Services
-
-- **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:8081
-- **API Health Check**: http://localhost:8081/
+- **Frontend UI**: http://localhost:3005
+- **Redirector**: http://localhost (port 80)
 
 ## 🏗️ Architecture
 
-### Services
-
-1. **Backend** (`./backend/`)
-
-   - Express.js API server
-   - SQLite database with Prisma ORM
-   - Runs on port 80 (mapped to 8081 externally)
-   - Handles URL shortening, redirects, and statistics
-
-2. **Frontend** (`./frontend/`)
-   - Next.js React application
-   - Modern UI with shadcn/ui components
-   - Runs on port 3000 (mapped to 3001 externally)
-   - Communicates with backend API
-
-### Docker Setup
-
-- **Combined Container**: Single container running both services with `supervisord`
-- **Individual Services**: Each service has its own `docker-compose.yml` for independent operation
-- **Combined Setup**: Root `docker-compose.yml` orchestrates both services
-- **Network**: Services communicate via Docker network `shortr-network`
-- **Health Checks**: Both services include health checks for reliability
-
-## 🔧 Development
-
-### Prerequisites
-
-- Docker and Docker Compose
-- Make (optional, for convenience commands)
-
-### Manual Docker Commands
-
-If you prefer not to use Make:
-
-```bash
-# Start combined single container
-docker-compose -f docker-compose.combined.yml up -d --build
-
-# Start both services separately
-docker-compose up -d --build
-
-# Start backend only
-cd backend && docker-compose up -d
-
-# Start frontend only
-cd frontend && docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop all
-docker-compose down
+```
+┌─────────────────────────────────────────┐
+│              Single Nginx               │
+│              Container                  │
+│  ┌─────────────┐  ┌─────────────────┐  │
+│  │   Port 3005 │  │    Port 80      │  │
+│  │  (Frontend) │  │  (Redirector)   │  │
+│  └─────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────┘
 ```
 
-### Environment Variables
+- **Backend** (`./backend/`): Express.js API server, SQLite with Prisma ORM, runs on port 8080 (internal)
+- **Frontend** (`./frontend/`): Next.js React app, runs on port 3000 (internal)
+- **Nginx**: Single container, proxies:
+  - Port 80 → backend for redirects (e.g. http://localhost/abc123)
+  - Port 3005 → frontend UI (e.g. http://localhost:3005)
+  - /api on port 3005 → backend
 
-The services use these environment variables:
+## 🛠️ How to Use
 
-**Backend:**
-
-- `NODE_ENV=production`
-- `DATABASE_URL=file:/app/prisma/dev.db`
-- `PORT=80`
-
-**Frontend:**
-
-- `NODE_ENV=production`
-- `NEXT_PUBLIC_API_URL=http://backend:80` (when using combined setup)
-- `NEXT_PUBLIC_API_URL=http://localhost:8081` (when running standalone)
+1. **Start the application:**
+   ```bash
+   ./start-shortr-single.sh
+   ```
+2. **Access the UI:**
+   - Visit http://localhost:3005 to use the Shortr UI
+   - Short URLs like http://localhost/abc123 will redirect
+3. **View logs:**
+   ```bash
+   docker-compose -f docker-compose.single-nginx.yml logs -f
+   ```
+4. **Stop the application:**
+   ```bash
+   docker-compose -f docker-compose.single-nginx.yml down
+   ```
 
 ## 📁 Project Structure
 
@@ -138,16 +63,14 @@ Shortr/
 │   ├── src/
 │   ├── prisma/
 │   ├── Dockerfile
-│   └── docker-compose.yml
-├── frontend/               # Frontend web application
+│   └── ...
+├── frontend/                # Frontend web application
 │   ├── src/
 │   ├── Dockerfile
-│   └── docker-compose.yml
-├── Dockerfile              # Combined container
-├── supervisord.conf        # Process manager config
-├── docker-compose.yml      # Multi-service orchestration
-├── docker-compose.combined.yml # Single container setup
-├── Makefile               # Convenience commands
+│   └── ...
+├── nginx.combined.conf      # Single Nginx config for both frontend and redirector
+├── docker-compose.single-nginx.yml # Docker Compose for single-nginx setup
+├── start-shortr-single.sh   # Startup script
 └── README.md
 ```
 
@@ -161,34 +84,16 @@ Shortr/
 
 ## 🔍 Troubleshooting
 
-### Service Communication Issues
-
-If the frontend can't connect to the backend:
-
-1. Ensure both services are running: `docker-compose ps`
-2. Check backend health: `curl http://localhost:8081/`
-3. Verify network connectivity: `docker network ls`
-
-### Database Issues
-
-If the database isn't working:
-
-1. Check if Prisma migrations ran: `docker-compose logs backend`
-2. Restart the backend service: `make stop-all && make start-all`
-
-### Port Conflicts
-
-If ports are already in use:
-
-- Backend: Change port 8081 in `docker-compose.yml`
-- Frontend: Change port 3001 in `docker-compose.yml`
+- **Port 80 in use:** Make sure no other service is using port 80 before starting.
+- **Frontend not loading:** Ensure all containers are healthy (`docker-compose -f docker-compose.single-nginx.yml ps`).
+- **Database issues:** Check backend logs for errors.
 
 ## 🧹 Cleanup
 
 To completely remove all Docker resources:
 
 ```bash
-make clean
+docker-compose -f docker-compose.single-nginx.yml down -v --rmi all
 ```
 
 This will remove all containers, images, and volumes associated with the project.

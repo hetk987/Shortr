@@ -11,8 +11,6 @@ services:
       NODE_ENV: production
       DATABASE_URL: file:/app/prisma/dev.db
       PORT: 8080
-    ports:
-      - "8081:8080"
     volumes:
       - ./backend/prisma:/app/prisma
     working_dir: /app
@@ -42,8 +40,6 @@ services:
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://backend:8080
-    ports:
-      - "3001:3000"
     depends_on:
       backend:
         condition: service_healthy
@@ -64,31 +60,18 @@ services:
     networks:
       - shortr-network
 
-  # Frontend Nginx (serves UI and proxies /api)
-  nginx-frontend:
+  # Combined Nginx (serves both frontend and redirector)
+  nginx:
     image: nginx:alpine
-    container_name: shortr-nginx-frontend
+    container_name: shortr-nginx
     ports:
-      - "1000:1000"
+      - "80:80" # Redirector
+      - "3005:3005" # Frontend
     volumes:
-      - ./nginx.frontend.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx.combined.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
       - frontend
-    restart: unless-stopped
-    networks:
-      - shortr-network
-
-  # Redirector Nginx (handles short URL redirects)
-  nginx-redirect:
-    image: nginx:alpine
-    container_name: shortr-nginx-redirect
-    ports:
-      - "1001:1001"
-    volumes:
-      - ./nginx.redirect.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - backend
     restart: unless-stopped
     networks:
       - shortr-network
