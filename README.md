@@ -4,10 +4,10 @@ A modern URL shortener application built with Node.js backend and Next.js fronte
 
 ## 🚀 Quick Start
 
-Start the application using the single-nginx setup:
+Start the application using the nginx setup:
 
 ```bash
-./start-shortr-single.sh
+./start-shortr.sh
 ```
 
 This will build and start all services (backend, frontend, and nginx) in separate containers, with a single Nginx instance proxying both the frontend UI and redirector endpoints.
@@ -23,10 +23,10 @@ This will build and start all services (backend, frontend, and nginx) in separat
 ┌─────────────────────────────────────────┐
 │              Single Nginx               │
 │              Container                  │
-│  ┌─────────────┐  ┌─────────────────┐  │
-│  │   Port 3005 │  │    Port 80      │  │
-│  │  (Frontend) │  │  (Redirector)   │  │
-│  └─────────────┘  └─────────────────┘  │
+│  ┌─────────────┐  ┌─────────────────┐   │
+│  │   Port 3005 │  │    Port 80      │   │
+│  │  (Frontend) │  │  (Redirector)   │   │
+│  └─────────────┘  └─────────────────┘   │
 └─────────────────────────────────────────┘
 ```
 
@@ -41,18 +41,18 @@ This will build and start all services (backend, frontend, and nginx) in separat
 
 1. **Start the application:**
    ```bash
-   ./start-shortr-single.sh
+   ./start-shortr.sh
    ```
 2. **Access the UI:**
    - Visit http://localhost:3005 to use the Shortr UI
    - Short URLs like http://localhost/abc123 will redirect
 3. **View logs:**
    ```bash
-   docker-compose -f docker-compose.single-nginx.yml logs -f
+   docker-compose -f docker-compose.yml logs -f
    ```
 4. **Stop the application:**
    ```bash
-   docker-compose -f docker-compose.single-nginx.yml down
+   docker-compose -f docker-compose.yml down
    ```
 
 ## 📁 Project Structure
@@ -68,9 +68,9 @@ Shortr/
 │   ├── src/
 │   ├── Dockerfile
 │   └── ...
-├── nginx.combined.conf      # Single Nginx config for both frontend and redirector
-├── docker-compose.single-nginx.yml # Docker Compose for single-nginx setup
-├── start-shortr-single.sh   # Startup script
+├── nginx.conf      # Single Nginx config for both frontend and redirector
+├── docker-compose.yml # Docker Compose for single-nginx setup
+├── start-shortr.sh   # Startup script
 └── README.md
 ```
 
@@ -85,7 +85,7 @@ Shortr/
 ## 🔍 Troubleshooting
 
 - **Port 80 in use:** Make sure no other service is using port 80 before starting.
-- **Frontend not loading:** Ensure all containers are healthy (`docker-compose -f docker-compose.single-nginx.yml ps`).
+- **Frontend not loading:** Ensure all containers are healthy (`docker-compose -f docker-compose.yml ps`).
 - **Database issues:** Check backend logs for errors.
 
 ## 🧹 Cleanup
@@ -93,7 +93,7 @@ Shortr/
 To completely remove all Docker resources:
 
 ```bash
-docker-compose -f docker-compose.single-nginx.yml down -v --rmi all
+docker-compose -f docker-compose.yml down -v --rmi all
 ```
 
 This will remove all containers, images, and volumes associated with the project.
