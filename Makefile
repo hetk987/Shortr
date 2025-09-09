@@ -47,13 +47,13 @@ start-all:
 # Start combined single container
 start-combined:
 	@echo "Starting combined single container..."
-	docker-compose -f docker-compose.combined.yml up -d --build
+	docker-compose -f docker-compose.yml up -d --build
 
 # Stop all services
 stop-all:
 	@echo "Stopping all services..."
 	docker-compose down
-	docker-compose -f docker-compose.combined.yml down
+	docker-compose -f docker-compose.yml down
 	cd backend && docker-compose down
 	cd frontend && docker-compose down
 
@@ -71,7 +71,7 @@ logs-all:
 clean:
 	@echo "Cleaning up Docker resources..."
 	docker-compose down -v --rmi all
-	docker-compose -f docker-compose.combined.yml down -v --rmi all
+	docker-compose -f docker-compose.yml down -v --rmi all
 	cd backend && docker-compose down -v --rmi all
 	cd frontend && docker-compose down -v --rmi all
 	docker system prune -f 

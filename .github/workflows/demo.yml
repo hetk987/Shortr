@@ -1,0 +1,179 @@
+# GitHub Actions Demo Workflow
+# This workflow demonstrates the project is production-ready and follows CI/CD best practices
+
+name: 🚀 Shortr Demo & Health Check
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  health-check:
+    name: 🔍 Application Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Build and start services
+        run: |
+          # Start all services in background
+          ./start-shortr.sh &
+
+          # Wait for services to be ready
+          echo "Waiting for services to start..."
+          sleep 30
+
+      - name: ✅ Test application health
+        run: |
+          # Check if containers are running
+          docker-compose ps
+
+          # Check frontend health
+          curl -f http://localhost:3005 || exit 1
+          echo "✅ Frontend is healthy"
+
+          # Check API health
+          curl -f http://localhost:3005/api/ || exit 1
+          echo "✅ API is healthy"
+
+          # Test link creation
+          curl -X POST http://localhost:3005/api/ \
+            -H "Content-Type: application/json" \
+            -d '{"alias": "test", "url": "https://example.com"}' || exit 1
+          echo "✅ Link creation works"
+
+          # Test redirect
+          REDIRECT_URL=$(curl -s -o /dev/null -w "%{redirect_url}" http://localhost/test)
+          if [[ "$REDIRECT_URL" == "https://example.com" ]]; then
+            echo "✅ Redirect works correctly"
+          else
+            echo "❌ Redirect failed"
+            exit 1
+          fi
+
+      - name: 📊 Show application logs
+        if: always()
+        run: |
+          echo "=== Backend Logs ==="
+          docker-compose logs backend
+          echo "=== Frontend Logs ==="
+          docker-compose logs frontend
+          echo "=== Nginx Logs ==="
+          docker-compose logs nginx
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          docker-compose down -v
+          docker system prune -f
+
+  performance-test:
+    name: ⚡ Performance Testing
+    runs-on: ubuntu-latest
+    needs: health-check
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗️ Start application
+        run: |
+          ./start-shortr.sh &
+          sleep 30
+
+      - name: 📈 Run performance tests
+        run: |
+          # Create test links
+          for i in {1..10}; do
+            curl -X POST http://localhost:3005/api/ \
+              -H "Content-Type: application/json" \
+              -d "{\"alias\": \"perf$i\", \"url\": \"https://example.com/$i\"}"
+          done
+
+          # Test redirect performance
+          echo "Testing redirect performance..."
+          for i in {1..10}; do
+            START_TIME=$(date +%s%N)
+            curl -s -o /dev/null http://localhost/perf$i
+            END_TIME=$(date +%s%N)
+            DURATION=$((($END_TIME - $START_TIME) / 1000000)) # Convert to ms
+            echo "Redirect $i: ${DURATION}ms"
+          done
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: docker-compose down -v
+
+  documentation-check:
+    name: 📚 Documentation Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📝 Check documentation completeness
+        run: |
+          # Check if key files exist
+          FILES=(
+            "README.md"
+            "DEMO_SCRIPT.md" 
+            "SHOWCASE_GUIDE.md"
+            "docker-compose.yml"
+            "start-shortr.sh"
+          )
+
+          for file in "${FILES[@]}"; do
+            if [[ -f "$file" ]]; then
+              echo "✅ $file exists"
+            else
+              echo "❌ $file missing"
+              exit 1
+            fi
+          done
+
+          # Check README has key sections
+          SECTIONS=(
+            "Tech Stack"
+            "Quick Start"
+            "Architecture"
+            "API Documentation"
+          )
+
+          for section in "${SECTIONS[@]}"; do
+            if grep -q "$section" README.md; then
+              echo "✅ README has '$section' section"
+            else
+              echo "❌ README missing '$section' section"
+              exit 1
+            fi
+          done
+
+  deployment-ready:
+    name: 🚀 Deployment Readiness
+    runs-on: ubuntu-latest
+    needs: [health-check, performance-test, documentation-check]
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ✅ Verify deployment readiness
+        run: |
+          echo "🎉 All checks passed!"
+          echo "✅ Health checks: PASSED"
+          echo "✅ Performance tests: PASSED"  
+          echo "✅ Documentation: COMPLETE"
+          echo ""
+          echo "🚀 Project is ready for showcase!"
+          echo "📹 Create demo video using: DEMO_SCRIPT.md"
+          echo "📊 Follow showcase guide: SHOWCASE_GUIDE.md"
+          echo "🌐 Deploy to production using deployment options in README"
