@@ -235,5 +235,3 @@ Built with ❤️ by Het Koradia
 - 📧 **Email**: het.koradia.1@gmail.com
 - 💼 **LinkedIn**: linkedin.com/in/het-koradia
 - 🐙 **GitHub**: github.com/hetk987
-
----
