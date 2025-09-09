@@ -14,7 +14,6 @@ A **production-ready URL shortener** built with modern full-stack technologies, 
 - 🎨 **Next.js 15** for server-side rendering and optimization
 - 💅 **Tailwind CSS** for responsive, modern styling
 - 🧩 **shadcn/ui** for accessible component library
-- 📱 **Responsive design** with mobile-first approach
 
 **Backend:**
 
@@ -28,7 +27,6 @@ A **production-ready URL shortener** built with modern full-stack technologies, 
 - 🐳 **Docker** containerization for easy deployment
 - 🔄 **Docker Compose** for multi-service orchestration
 - 🌐 **Nginx** reverse proxy for efficient request routing
-- ✅ **Health checks** and service monitoring
 
 ## ✨ **Key Features**
 
@@ -37,7 +35,6 @@ A **production-ready URL shortener** built with modern full-stack technologies, 
 ⚡ **Instant Redirects** - Fast, reliable URL redirection  
 📱 **Mobile Responsive** - Optimized for all device sizes  
 🛡️ **Error Handling** - Comprehensive validation and user feedback  
-🔄 **Real-time Updates** - Dynamic UI updates without page refreshes
 
 ## 🚀 **Quick Start**
 
